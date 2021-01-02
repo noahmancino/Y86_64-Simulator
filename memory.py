@@ -39,7 +39,7 @@ def overflowing_sub(num1, num2, bits):
     :param num2: Second argument to subtraction operation
     :param bits: Number of bits to fit the result into
     :return: Subtracts num2 from num1, wrapped around 2**bits - 1, and returns the result in a tuple preceded by a
-             bool indicating whether overflow occured.
+             bool indicating whether overflow occurred.
     """
     max_num = 2 ** bits - 1
     difference = num1 - num2
@@ -75,27 +75,31 @@ class Memory:
         self.sign_flag = 0
         self.zero_flag = 0
 
-    @staticmethod
-    def extract_byte(byte, val):
+    def write(self, src, destination):
         """
-        :param byte: byte to be extracted, from 0 to 7
-        :param val: 64-bit value from which to extract the byte
-        :return: the 'byteth' byte of val
+        :param src: Register that holds a write value
+        :param destination: Address of memory to write to
+        :return:
         """
-        # Byte long bit mask
+        val = self.registers[src]
         mask = 2 ** 8 - 1
-        return (val >> (8 * byte)) & mask
+        for i in range(8):
+            byte = (val >> (8 * i)) & mask
+            self.main[destination + i] = byte
 
-    def combine_bytes(self, address):
+    def read(self, dest, address):
         """
+        Reads main memory at 'address' into the destination register.
+
         :param address: A direct address to main memory, between 0 and 5000 - 8
-        :return: A python integer which the little endian interpreted value of the 8 consecutive bytes of memory
-                 starting at the location specified by the address parameter
+        :param dest: The location of a register in the register file
+        :return:
         """
         combined = 0
         for x in range(8):
             combined = combined >> 8
             combined |= self.main[address + x]
-        return combined
+
+        self.registers[dest] = combined
 
 

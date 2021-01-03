@@ -122,4 +122,52 @@ class System:
         self.mem.read(dest, source)
         self.mem.program_counter += 10
 
-    def cmovxx(self):
+    def cmovxx(self, src, dest, op_code):
+
+        will_move = False
+
+        if op_code == 0:
+            will_move = True
+        elif op_code == 1:
+            will_move = self.mem.zero_flag or (self.mem.sign_flag != self.mem.overflow_flag)
+        elif op_code == 2:
+            will_move = self.mem.sign_flag != self.mem.overflow_flag
+        elif op_code == 3:
+            will_move = self.mem.zero_flag
+        elif op_code == 4:
+            will_move = not self.mem.zero_flag
+        elif op_code == 5:
+            will_move = self.mem.zero_flag or (self.mem.sign_flag == self.mem.overflow_flag)
+        elif op_code == 6:
+            will_move = not self.mem.zero_flag and (self.mem.sign_flag == self.mem.overflow_flag)
+        else:
+            self.mem.status = memory.Status.INS
+            return
+
+        if will_move:
+            self.mem.registers[dest] = self.mem.registers[src]
+
+        self.mem.program_counter += 2
+
+    def pushq(self, src):
+        # Register four is the stack pointer
+        self.mem.registers[4] -= 8
+        self.mem.write(src, self.mem.registers[4])
+        self.mem.program_counter += 2
+
+    def popq(self, dest):
+        self.mem.read(dest, self.mem.registers[4])
+        self.mem.registers[4] += 8
+        self.mem.program_counter += 2
+
+    def call(self, dest):
+        self.mem.registers[4] -= 8
+        self.mem.program_counter += 9
+        self.mem.write(self.mem.program_counter, self.mem.registers[4])
+        self.mem.program_counter = dest
+
+    def ret(self):
+        address = self.mem.read(self.mem.registers[4])
+        self.mem.registers[4] += 8
+        self.mem.program_counter = address
+

@@ -4,51 +4,6 @@ as if they were words in system memory.
 '''
 from enum import Enum
 
-
-def twos_compliment(num, bits):
-    """
-    :param num: A python integer
-    :param bits: Number of bytes to fit the integer into
-    :return: The two's compliment value of num interpreted as a two's compliment bit string with 'bytes' bytes
-    """
-    smallest_int = 1 << bits
-    if num & smallest_int:
-        num -= smallest_int
-    return num
-
-
-def overflowing_add(num1, num2, bits):
-    """
-    :param num1: First number to add
-    :param num2: Second number to add
-    :param bits: Number of bits to fit the result into
-    :return: Adds the two numbers modulo 2**bits - 1 and returns the result in a tuple preceded a bool indicating
-             overflow occurred
-    """
-    max_num = 2 ** bits - 1
-    sum_res = num1 + num2
-    result = (False, sum_res)
-    if sum_res > max_num - 1:
-        result = (True, sum_res % max_num)
-    return result
-
-
-def overflowing_sub(num1, num2, bits):
-    """
-    :param num1: First argument to subtraction operation
-    :param num2: Second argument to subtraction operation
-    :param bits: Number of bits to fit the result into
-    :return: Subtracts num2 from num1, wrapped around 2**bits - 1, and returns the result in a tuple preceded by a
-             bool indicating whether overflow occurred.
-    """
-    max_num = 2 ** bits - 1
-    difference = num1 - num2
-    result = (False, difference)
-    if difference < 0:
-        result = (1, max_num + difference + 1)
-    return result
-
-
 class Status(Enum):
     # Normal processor state
     AOK = 0
@@ -97,9 +52,67 @@ class Memory:
         """
         combined = 0
         for x in range(8):
-            combined = combined >> 8
-            combined |= self.main[address + x]
+            combined = combined << 8
+            combined |= self.main[address + 7 - x]
 
         self.registers[dest] = combined
 
+    def pprint(self):
+        print(f'registers: {self.registers}')
+        print(f'program counter: {self.program_counter}')
+        print(f'status: {self.status}')
+        print(f'flags: overflow {self.overflow_flag}, sign: {self.sign_flag}, zero: {self.zero_flag}')
+
+    @staticmethod
+    def to_unsigned(num):
+        """
+        :param num: A python integer which can be represented in 64 bits with two's compliment encoding.
+        :return: The conversion of num interpreted as a two's compliment signed int to an unsigned int.
+        """
+        if num < 0:
+            num += 2**64
+
+        return num
+
+    @staticmethod
+    def to_signed(num):
+        """
+        Note that in operations we use on memory, there are a number of places where logical bit shift is needed but none
+        where arithmetic bit shift is needed. Since python's built in bit shift operator is arithmetic, memory will
+        always be stored as an unsigned int and only be converted to a signed in some intermediate computations and
+        sometimes when displaying information to users.
+
+        :param num: A python integer which can fit into 64 unsigned bits
+        :return: The conversion of num interpreted as an unsigned int to num interpreted as a twos_compliment int
+        """
+        smallest_int = 1 << 64
+        if num & smallest_int:
+            num -= smallest_int
+        return num
+
+    @staticmethod
+    def overflowing_add(num1, num2):
+        """
+        :param num1: First number to add (unsigned 64-bit)
+        :param num2: Second number to add (unsigned 64-bit)
+        :return: A 2-tuple containing the result of two's compliment addition between num1 and num2 preceded by a bool
+                 indicating if overflow occurred.
+        """
+        max_num = 2**64 - 1
+        sum_res = num1 + num2
+        result = (False, sum_res)
+        if sum_res >= max_num:
+            result = (True, sum_res % (max_num + 1))
+        return result
+
+    def overflowing_sub(self, num1, num2):
+        """
+        :param num1: First argument to subtraction operation
+        :param num2: Second argument to subtraction operation
+        :return: A 2-tuple containing the result of two's compliment subtraction between num1 and num2 preceded by a bool
+                 indicating if overflow occurred.
+        """
+        # num2 = -num2
+        num2 = self.to_unsigned(-self.to_signed(num2))
+        return self.overflowing_add(num1, num2)
 

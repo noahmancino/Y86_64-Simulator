@@ -26,9 +26,9 @@ class System:
         src_val, dest_val = self.mem.registers[src], self.mem.registers[dest]
         overflow = False
         if op_code == 0:
-            overflow, self.mem.registers[dest] = memory.overflowing_add(dest_val, src_val, 64)
+            overflow, self.mem.registers[dest] = self.mem.overflowing_add(dest_val, src_val)
         elif op_code == 1:
-            overflow, self.mem.registers[dest] = memory.overflowing_sub(dest_val, src_val, 64)
+            overflow, self.mem.registers[dest] = self.mem.overflowing_sub(dest_val, src_val)
         elif op_code == 2:
             self.mem.registers[dest] = src_val & dest_val
         elif op_code == 3:
@@ -170,4 +170,3 @@ class System:
         address = self.mem.read(self.mem.registers[4])
         self.mem.registers[4] += 8
         self.mem.program_counter = address
-

@@ -1,10 +1,35 @@
-# This module defines the System class, which includes the state of memory and all instructions
+# This module defines the System class, which holds the entire system state and methods to carry out instructions.
 import memory
+from enum import Enum
+
+
+class Status(Enum):
+    # Normal processor state
+    AOK = 0
+    # Halt instruction encountered
+    HLT = 1
+    # Reference to invalid memory address.
+    ADR = 2
+    # Invalid instruction
+    INS = 3
 
 
 class System:
     def __init__(self):
         self.mem = memory.Memory()
+        # Registers hold 64 bits, i.e python ints from 0 to 2^64
+        self.registers = [0 for _ in range(15)]
+        self.program_counter = 0
+        self.status = Status.AOK
+        self.overflow_flag = 0
+        self.sign_flag = 0
+        self.zero_flag = 0
+
+    def pprint(self):
+        print(f'registers: {[self.mem.to_signed(register) for register in self.registers]}')
+        print(f'program_counter: {self.program_counter}')
+        print(f'status: {self.status}')
+        print(f'overflow flag: {self.overflow_flag}; sign flag {self.sign_flag} ; zero flag {self.zero_flag}')
 
     def halt(self):
         """
@@ -12,7 +37,7 @@ class System:
 
         :return:
         """
-        self.mem.status = memory.Status.HLT
+        self.status = Status.HLT
 
     def bin_op(self, src, dest, op_code):
         """
@@ -23,24 +48,24 @@ class System:
         :param op_code: Specifies which binary operation to perform.
         :return:
         """
-        src_val, dest_val = self.mem.registers[src], self.mem.registers[dest]
+        src_val, dest_val = self.registers[src], self.registers[dest]
         overflow = False
         if op_code == 0:
-            overflow, self.mem.registers[dest] = self.mem.overflowing_add(dest_val, src_val)
+            overflow, self.registers[dest] = self.mem.overflowing_add(dest_val, src_val)
         elif op_code == 1:
-            overflow, self.mem.registers[dest] = self.mem.overflowing_sub(dest_val, src_val)
+            overflow, self.registers[dest] = self.mem.overflowing_sub(dest_val, src_val)
         elif op_code == 2:
-            self.mem.registers[dest] = src_val & dest_val
+            self.registers[dest] = src_val & dest_val
         elif op_code == 3:
-            self.mem.registers[dest] = src_val | dest_val
+            self.registers[dest] = src_val | dest_val
         else:
-            self.mem.status = memory.Status.INS
+            self.status = Status.INS
             return
 
-        self.mem.overflow_flag = overflow
-        self.mem.sign_flag = self.mem.registers[dest] < 0
-        self.mem.zero_flag = self.mem.registers[dest] == 0
-        self.mem.program_counter += 2
+        self.overflow_flag = overflow
+        self.sign_flag = self.registers[dest] < 0
+        self.zero_flag = self.registers[dest] == 0
+        self.program_counter += 2
 
     def jxx(self, dest, op_code):
         """
@@ -55,25 +80,25 @@ class System:
         if op_code == 0:
             will_jump = True
         elif op_code == 1:
-            will_jump = self.mem.zero_flag or (self.mem.sign_flag != self.mem.overflow_flag)
+            will_jump = self.zero_flag or (self.sign_flag != self.overflow_flag)
         elif op_code == 2:
-            will_jump = self.mem.sign_flag != self.mem.overflow_flag
+            will_jump = self.sign_flag != self.overflow_flag
         elif op_code == 3:
-            will_jump = self.mem.zero_flag
+            will_jump = self.zero_flag
         elif op_code == 4:
-            will_jump = not self.mem.zero_flag
+            will_jump = not self.zero_flag
         elif op_code == 5:
-            will_jump = self.mem.zero_flag or (self.mem.sign_flag == self.mem.overflow_flag)
+            will_jump = self.zero_flag or (self.sign_flag == self.overflow_flag)
         elif op_code == 6:
-            will_jump = not self.mem.zero_flag and (self.mem.sign_flag == self.mem.overflow_flag)
+            will_jump = not self.zero_flag and (self.sign_flag == self.overflow_flag)
         else:
-            self.mem.status = memory.Status.INS
+            self.status = Status.INS
             return
 
         if will_jump:
-            self.mem.program_counter = dest
+            self.program_counter = dest
         else:
-            self.mem.program_counter += 9
+            self.program_counter += 9
 
         return
 
@@ -83,8 +108,8 @@ class System:
         :param dest: Register to move the immediate value to.
         :return:
         """
-        self.mem.registers[dest] = immediate
-        self.mem.program_counter += 10
+        self.registers[dest] = immediate
+        self.program_counter += 10
 
     def rrmovq(self, src, dest):
         """
@@ -92,8 +117,8 @@ class System:
         :param dest: The register in which the value of src will be copied
         :return:
         """
-        self.mem.registers[dest] = self.mem.registers[src]
-        self.mem.program_counter += 2
+        self.registers[dest] = self.registers[src]
+        self.program_counter += 2
 
     def rmmovq(self, src, dest_reg, displacement):
         """
@@ -105,22 +130,22 @@ class System:
         :param displacement: The difference between where we wish to write to memory and the contents dest_reg
         :return:
         """
-        destination = self.mem.registers[dest_reg] + displacement
-        self.mem.write(src, destination)
-        self.mem.program_counter += 10
+        destination = self.registers[dest_reg] + displacement
+        self.mem.write(self.registers[src], destination)
+        self.program_counter += 10
 
     def mrmovq(self, src_reg, dest, displacement):
         """
         Copies the memory pointed at by the contents of src_reg + replacement to the dest register
 
         :param src_reg: Register holding an address to memory
-        :param dest: A register to which you wish to hold data from memory
+        :param dest: A register to which you wish to move data from memory
         :param displacement: Where in memory you wish to read from relative to the address held by src_reg
         :return:
         """
-        source = self.mem.registers[src_reg] + displacement
-        self.mem.read(dest, source)
-        self.mem.program_counter += 10
+        source = self.registers[src_reg] + displacement
+        self.registers[dest] = self.mem.read(source)
+        self.program_counter += 10
 
     def cmovxx(self, src, dest, op_code):
 
@@ -129,44 +154,44 @@ class System:
         if op_code == 0:
             will_move = True
         elif op_code == 1:
-            will_move = self.mem.zero_flag or (self.mem.sign_flag != self.mem.overflow_flag)
+            will_move = self.zero_flag or (self.sign_flag != self.overflow_flag)
         elif op_code == 2:
-            will_move = self.mem.sign_flag != self.mem.overflow_flag
+            will_move = self.sign_flag != self.overflow_flag
         elif op_code == 3:
-            will_move = self.mem.zero_flag
+            will_move = self.zero_flag
         elif op_code == 4:
-            will_move = not self.mem.zero_flag
+            will_move = not self.zero_flag
         elif op_code == 5:
-            will_move = self.mem.zero_flag or (self.mem.sign_flag == self.mem.overflow_flag)
+            will_move = self.zero_flag or (self.sign_flag == self.overflow_flag)
         elif op_code == 6:
-            will_move = not self.mem.zero_flag and (self.mem.sign_flag == self.mem.overflow_flag)
+            will_move = not self.zero_flag and (self.sign_flag == self.overflow_flag)
         else:
-            self.mem.status = memory.Status.INS
+            self.status = Status.INS
             return
 
         if will_move:
-            self.mem.registers[dest] = self.mem.registers[src]
+            self.registers[dest] = self.registers[src]
 
-        self.mem.program_counter += 2
+        self.program_counter += 2
 
     def pushq(self, src):
         # Register four is the stack pointer
-        self.mem.registers[4] -= 8
-        self.mem.write(src, self.mem.registers[4])
-        self.mem.program_counter += 2
+        self.registers[4] -= 8
+        self.mem.write(self.registers[src], self.registers[4])
+        self.program_counter += 2
 
     def popq(self, dest):
-        self.mem.read(dest, self.mem.registers[4])
-        self.mem.registers[4] += 8
-        self.mem.program_counter += 2
+        self.registers[dest] = self.mem.read(self.registers[4])
+        self.registers[4] += 8
+        self.program_counter += 2
 
     def call(self, dest):
-        self.mem.registers[4] -= 8
-        self.mem.program_counter += 9
-        self.mem.write(self.mem.program_counter, self.mem.registers[4])
-        self.mem.program_counter = dest
+        self.registers[4] -= 8
+        self.program_counter += 9
+        self.mem.write(self.program_counter, self.registers[4])
+        self.program_counter = dest
 
     def ret(self):
-        address = self.mem.read(self.mem.registers[4])
-        self.mem.registers[4] += 8
-        self.mem.program_counter = address
+        address = self.mem.read(self.registers[4])
+        self.registers[4] += 8
+        self.program_counter = address

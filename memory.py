@@ -2,66 +2,43 @@
 This module defines the structure of system memory and provides some helper functions for working with python integers
 as if they were words in system memory.
 '''
-from enum import Enum
-
-class Status(Enum):
-    # Normal processor state
-    AOK = 0
-    # Halt instruction encountered
-    HLT = 1
-    # Reference to invalid memory address.
-    ADR = 2
-    # Invalid instruction
-    INS = 3
 
 
 class Memory:
     """
-    Holds the state of memory, and includes some helper functions for reading writing and interpreting it.
+    Holds the state of main memory along with some methods to read to, write to, and interpret it.
     """
     def __init__(self):
-        # Main memory is big endian, and holds 'bytes' which in this case are just python integers from 0 to 2^8
-        self.main = [0 for _ in range(5000)]
-        # Registers hold 64 bits, i.e python ints from 0 to 256
-        self.registers = [0 for _ in range(15)]
-        self.program_counter = 0
-        self.status = Status.AOK
-        self.overflow_flag = 0
-        self.sign_flag = 0
-        self.zero_flag = 0
+        # Main memory is little endian, and holds 'bytes' which in this case are just python integers from 0 to 2^8
+        self.main = [0 for _ in range(1000)]
 
     def write(self, src, destination):
         """
-        :param src: Register that holds a write value
+        :param src: A value to write.
         :param destination: Address of memory to write to
         :return:
         """
-        val = self.registers[src]
+        val = src
         mask = 2 ** 8 - 1
         for i in range(8):
             byte = (val >> (8 * i)) & mask
             self.main[destination + i] = byte
 
-    def read(self, dest, address):
+    def read(self, address):
         """
-        Reads main memory at 'address' into the destination register.
-
-        :param address: A direct address to main memory, between 0 and 5000 - 8
-        :param dest: The location of a register in the register file
-        :return:
+        :param address: A direct address to main memory, between 0 and 1000 - 8
+        :return: The next 8 bytes after address read into a 64 bit number.
         """
         combined = 0
         for x in range(8):
             combined = combined << 8
             combined |= self.main[address + 7 - x]
-
-        self.registers[dest] = combined
+        return combined
 
     def pprint(self):
-        print(f'registers: {self.registers}')
-        print(f'program counter: {self.program_counter}')
-        print(f'status: {self.status}')
-        print(f'flags: overflow {self.overflow_flag}, sign: {self.sign_flag}, zero: {self.zero_flag}')
+        print("main:")
+        for i in range(125):
+            print([self.main[j + (i * 8)] for j in range(8)])
 
     @staticmethod
     def to_unsigned(num):
@@ -85,9 +62,9 @@ class Memory:
         :param num: A python integer which can fit into 64 unsigned bits
         :return: The conversion of num interpreted as an unsigned int to num interpreted as a twos_compliment int
         """
-        smallest_int = 1 << 64
+        smallest_int = 1 << 63
         if num & smallest_int:
-            num -= smallest_int
+            num -= 2 * smallest_int
         return num
 
     @staticmethod
@@ -100,12 +77,15 @@ class Memory:
         """
         max_num = 2**64 - 1
         sum_res = num1 + num2
-        result = (False, sum_res)
+        result = sum_res
         if sum_res >= max_num:
-            result = (True, sum_res % (max_num + 1))
-        return result
+            result = sum_res % (max_num + 1)
+        sign1, sign2, sign3 = (Memory.to_signed(num1) < 0), (Memory.to_signed(num2) < 0), (Memory.to_signed(result) < 0)
+        overflow = sign1 == sign2 and sign1 != sign3
+        return overflow, result
 
-    def overflowing_sub(self, num1, num2):
+    @staticmethod
+    def overflowing_sub(num1, num2):
         """
         :param num1: First argument to subtraction operation
         :param num2: Second argument to subtraction operation
@@ -113,6 +93,6 @@ class Memory:
                  indicating if overflow occurred.
         """
         # num2 = -num2
-        num2 = self.to_unsigned(-self.to_signed(num2))
-        return self.overflowing_add(num1, num2)
+        num2 = Memory.to_unsigned(-Memory.to_signed(num2))
+        return Memory.overflowing_add(num1, num2)
 

@@ -21,9 +21,9 @@ class System:
         self.registers = [0 for _ in range(15)]
         self.program_counter = 0
         self.status = Status.AOK
-        self.overflow_flag = 0
-        self.sign_flag = 0
-        self.zero_flag = 0
+        self.overflow_flag = False
+        self.sign_flag = False
+        self.zero_flag = False
 
     def pprint(self):
         print(f'registers: {[self.mem.to_signed(register) for register in self.registers]}')
@@ -63,7 +63,7 @@ class System:
             return
 
         self.overflow_flag = overflow
-        self.sign_flag = self.registers[dest] < 0
+        self.sign_flag = self.mem.to_signed(self.registers[dest]) < 0
         self.zero_flag = self.registers[dest] == 0
         self.program_counter += 2
 

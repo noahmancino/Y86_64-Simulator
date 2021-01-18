@@ -58,6 +58,7 @@ def run(sys: System):
 
     return True if sys.status == Status.AOK else False
 
+
 def query_response(option, sys):
     if option == "h":
         print(HELP_MESSAGE)
@@ -65,6 +66,7 @@ def query_response(option, sys):
         sys.pprint()
     elif option == "m":
         sys.mem.pprint()
+
 
 def main():
     sys = System()

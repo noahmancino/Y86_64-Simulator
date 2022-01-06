@@ -1,7 +1,7 @@
-'''
+"""
 This module defines the structure of system memory and provides some helper functions for working with python integers
 as if they were words in system memory.
-'''
+"""
 
 
 class Memory:
@@ -54,10 +54,10 @@ class Memory:
     @staticmethod
     def to_signed(num):
         """
-        Note that in operations we use on memory, there are a number of places where logical bit shift is needed but none
-        where arithmetic bit shift is needed. Since python's built in bit shift operator is arithmetic, memory will
-        always be stored as an unsigned int and only be converted to a signed in some intermediate computations and
-        sometimes when displaying information to users.
+        Note that in operations we use on memory, there are a number of places where logical bit shift is needed but
+        none where arithmetic bit shift is needed. Since python's built in bit shift operator is arithmetic,
+        memory will always be stored as an unsigned int and only be converted to a signed in some intermediate
+        computations and sometimes when displaying information to users.
 
         :param num: A python integer which can fit into 64 unsigned bits
         :return: The conversion of num interpreted as an unsigned int to num interpreted as a twos_compliment int
@@ -87,12 +87,10 @@ class Memory:
     @staticmethod
     def overflowing_sub(num1, num2):
         """
-        :param num1: First argument to subtraction operation
-        :param num2: Second argument to subtraction operation
-        :return: A 2-tuple containing the result of two's compliment subtraction between num1 and num2 preceded by a bool
-                 indicating if overflow occurred.
+        :param num1: First argument to subtraction operation :param num2: Second argument to subtraction operation
+        :return: A 2-tuple containing the result of two's compliment subtraction between num1 and num2 preceded by a
+        bool indicating if overflow occurred.
         """
         # num2 = -num2
         num2 = Memory.to_unsigned(-Memory.to_signed(num2))
         return Memory.overflowing_add(num1, num2)
-

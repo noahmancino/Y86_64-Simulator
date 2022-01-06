@@ -20,7 +20,6 @@ def run(sys: System):
     next_ins = sys.mem.main[sys.program_counter:sys.program_counter + 10]
     instruction_function = next_ins[0] & 0xf
     instruction_specifier = (next_ins[0] & 0xf0) >> 4
-    print(instruction_specifier)
     # Note: Not all instructions actually have register specifiers
     reg_a = (next_ins[1] & 0xf0) >> 4
     reg_b = next_ins[1] & 0xf0
@@ -90,5 +89,6 @@ def main():
         query_response(option, sys)
 
     return
+
 
 main()

@@ -17,7 +17,7 @@ class Status(Enum):
 class System:
     def __init__(self):
         self.mem = memory.Memory()
-        # Registers hold 64 bits, i.e python ints from 0 to 2^64
+        # Registers hold 64 bits, i.e python ints from 0 to 2^64 - 1
         self.registers = [0 for _ in range(15)]
         self.program_counter = 0
         self.status = Status.AOK
@@ -53,10 +53,12 @@ class System:
         if op_code == 0:
             overflow, self.registers[dest] = self.mem.overflowing_add(dest_val, src_val)
         elif op_code == 1:
+            # dest - src
             overflow, self.registers[dest] = self.mem.overflowing_sub(dest_val, src_val)
         elif op_code == 2:
             self.registers[dest] = src_val & dest_val
         elif op_code == 3:
+            # todo: xor, not or, dummy
             self.registers[dest] = src_val | dest_val
         else:
             self.status = Status.INS

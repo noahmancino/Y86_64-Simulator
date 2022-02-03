@@ -10,6 +10,7 @@ class Memory:
     """
     def __init__(self):
         # Main memory is little endian, and holds 'bytes' which in this case are just python integers from 0 to 2^8
+        # TODO: consider using bytearray type
         self.main = [0 for _ in range(1000)]
 
     def write(self, src, destination):
@@ -94,3 +95,10 @@ class Memory:
         # num2 = -num2
         num2 = Memory.to_unsigned(-Memory.to_signed(num2))
         return Memory.overflowing_add(num1, num2)
+
+    @staticmethod
+    def hex_string_to_bytes(hex_string):
+        # split the hex string into a list of two hex chars at a time
+        byte_list = [hex_string[i:i+2] for i in range(0, len(hex_string), 2)]
+        byte_list = [int(byte, 16) for byte in byte_list]
+        return byte_list

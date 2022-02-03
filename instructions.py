@@ -15,6 +15,7 @@ class Status(Enum):
 
 
 class System:
+
     def __init__(self):
         self.mem = memory.Memory()
         # Registers hold 64 bits, i.e python ints from 0 to 2^64 - 1

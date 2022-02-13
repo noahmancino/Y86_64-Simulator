@@ -111,6 +111,7 @@ class System:
         :param dest: Register to move the immediate value to.
         :return:
         """
+        print(dest)
         self.registers[dest] = immediate
         self.program_counter += 10
 

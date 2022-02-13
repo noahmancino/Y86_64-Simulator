@@ -1,5 +1,7 @@
 import unittest
 from instructions import System
+from memory import Memory
+from Y86_64 import run
 
 class TestISAImplementation(unittest.TestCase):
 
@@ -8,13 +10,14 @@ class TestISAImplementation(unittest.TestCase):
         irmovq 5, %rax
         """
         system = System()
-        encoded_program = "0x30F07000000000000000"
-        byte_list = system.mem.hex_to_string_bytes(encoded_program)
+        encoded_program = "30F00500000000000000"
+        byte_list = Memory.hex_string_to_bytes(encoded_program)
         for i, byte in enumerate(byte_list):
-            system.mem[i] = byte
+            system.mem.main[i] = byte
 
-
-
+        while run(system):
+            pass
+        self.assertTrue(system.registers[0] == 5)
 
     def test_addq(self):
         """
@@ -22,7 +25,16 @@ class TestISAImplementation(unittest.TestCase):
         addq %rax, %rax
         Expected result: 10
         """
-        encoded_program = "0x30f005000000000000006000"
+        system = System()
+        encoded_program = "30f005000000000000006000"
+        byte_list = Memory.hex_string_to_bytes(encoded_program)
+        for i, byte in enumerate(byte_list):
+            system.mem.main[i] = byte
+
+        while run(system):
+            pass
+        self.assertTrue(system.registers[0] == 10)
+
 
     def test_subq(self):
         """
@@ -31,7 +43,16 @@ class TestISAImplementation(unittest.TestCase):
         subq %rbx, %rax
         Expected result: -5
         """
-        encoded_program = "0x30f0050000000000000030f30a000000000000006130"
+        system = System()
+        encoded_program = "30f0050000000000000030f30a000000000000006130"
+        byte_list = Memory.hex_string_to_bytes(encoded_program)
+        for i, byte in enumerate(byte_list):
+            system.mem.main[i] = byte
+
+        while run(system):
+            pass
+        print(f'Here: {system.registers[0]} \n')
+        self.assertTrue(Memory.to_signed(system.registers[0]) == -5)
 
     def test_andq(self):
         """

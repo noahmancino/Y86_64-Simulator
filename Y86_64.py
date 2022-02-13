@@ -1,4 +1,3 @@
-import memory
 from instructions import *
 
 HELP_MESSAGE = 'Enter nothing: execute the next instruction if program is paused. Otherwise end program.\n' \
@@ -22,7 +21,7 @@ def run(sys: System):
     instruction_specifier = (next_ins[0] & 0xf0) >> 4
     # Note: Not all instructions actually have register specifiers
     reg_a = (next_ins[1] & 0xf0) >> 4
-    reg_b = next_ins[1] & 0xf0
+    reg_b = next_ins[1] & 0xf
     if instruction_specifier == 0:
         sys.halt()
     elif instruction_specifier == 1:
@@ -90,5 +89,7 @@ def main():
 
     return
 
+'''
 
 main()
+'''

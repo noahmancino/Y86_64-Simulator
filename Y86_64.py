@@ -36,7 +36,7 @@ def run(sys: System):
         sys.rmmovq(reg_a, reg_b, displacement)
     elif instruction_specifier == 5:
         displacement = sys.mem.read(sys.program_counter + 2)
-        sys.mrmovq(reg_a, reg_b, displacement)
+        sys.mrmovq(reg_b, reg_a, displacement)
     elif instruction_specifier == 6:
         sys.bin_op(reg_a, reg_b, instruction_function)
     elif instruction_specifier == 7:

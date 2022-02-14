@@ -60,7 +60,7 @@ class System:
             self.registers[dest] = src_val & dest_val
         elif op_code == 3:
             # todo: xor, not or, dummy
-            self.registers[dest] = src_val | dest_val
+            self.registers[dest] = src_val ^ dest_val
         else:
             self.status = Status.INS
             return
@@ -111,7 +111,6 @@ class System:
         :param dest: Register to move the immediate value to.
         :return:
         """
-        print(dest)
         self.registers[dest] = immediate
         self.program_counter += 10
 
@@ -143,7 +142,7 @@ class System:
         Copies the memory pointed at by the contents of src_reg + replacement to the dest register
 
         :param src_reg: Register holding an address to memory
-        :param dest: A register to which you wish to move data from memory
+        :param dest: The register to which you wish to move data from memory
         :param displacement: Where in memory you wish to read from relative to the address held by src_reg
         :return:
         """

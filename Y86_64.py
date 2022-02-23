@@ -27,7 +27,10 @@ def run(sys: System):
     elif instruction_specifier == 1:
         sys.program_counter += 1
     elif instruction_specifier == 2:
-        sys.rrmovq(reg_a, reg_b)
+        if instruction_function == 0:
+            sys.rrmovq(reg_a, reg_b)
+        else:
+            sys.cmovxx(reg_a, reg_b, instruction_function)
     elif instruction_specifier == 3:
         immediate = sys.mem.read(sys.program_counter + 2)
         sys.irmovq(immediate, reg_b)

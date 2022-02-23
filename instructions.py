@@ -167,7 +167,7 @@ class System:
         elif op_code == 5:
             will_move = self.zero_flag or (self.sign_flag == self.overflow_flag)
         elif op_code == 6:
-            will_move = not self.zero_flag and (self.sign_flag == self.overflow_flag)
+            will_move = (not self.zero_flag) and (self.sign_flag == self.overflow_flag)
         else:
             self.status = Status.INS
             return

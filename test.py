@@ -176,7 +176,6 @@ class TestISAImplementation(unittest.TestCase):
         Expected result: %rax = 5
         """
         system = System()
-
         encoded_program = "700a000000000000000030f00500000000000000"
         byte_list = Memory.hex_string_to_bytes(encoded_program)
         for i, byte in enumerate(byte_list):
@@ -196,6 +195,163 @@ class TestISAImplementation(unittest.TestCase):
         addq %rbx, %rax
         jle next
 
-        Expected result: %rax = 10 and no infinite loop
+        Expected result: %rax = 10
         """
-        encoded_program = "30f3050000000000000061317116000000000000000020306030711600000000000000"
+        system = System()
+        encoded_program = "30f3050000000000000030f1050000000000000061317120000000000000000020306030712000000000000000"
+        byte_list = Memory.hex_string_to_bytes(encoded_program)
+        for i, byte in enumerate(byte_list):
+            system.mem.main[i] = byte
+
+        while run(system):
+            pass
+        self.assertTrue(system.registers[0] == 10)
+
+    def test_jl(self):
+        """
+        irmovq 5, %rbx
+        subq %rbx, %rcx
+        jle next
+        end: halt
+        next: rrmovq %rbx, %rax
+        addq %rbx, %rax
+        jle next
+
+        Expected result: %rax = 10
+        """
+        system = System()
+        encoded_program = "30f3050000000000000061317216000000000000000020306030711600000000000000"
+        byte_list = Memory.hex_string_to_bytes(encoded_program)
+        for i, byte in enumerate(byte_list):
+            system.mem.main[i] = byte
+
+        while run(system):
+            pass
+        self.assertTrue(system.registers[0] == 10)
+
+    def test_je(self):
+        """
+        irmovq 5, %rbx
+        irmovq 5, %rcx
+        subq %rbx, %rcx
+        je next
+        end: halt
+        next: rrmovq %rbx, %rax
+        addq %rbx, %rax
+        jle next
+
+        Expected result: %rax = 10
+        """
+        system = System()
+        encoded_program = "30f3050000000000000030f1050000000000000061317320000000000000000020306030712000000000000000"
+        byte_list = Memory.hex_string_to_bytes(encoded_program)
+        for i, byte in enumerate(byte_list):
+            system.mem.main[i] = byte
+
+        while run(system):
+            pass
+        self.assertTrue(system.registers[0] == 10)
+
+    def test_jne(self):
+        """
+        irmovq 5, %rbx
+        irmovq 4, %rcx
+        subq %rbx, %rcx
+        jne next
+        end: halt
+        next: rrmovq %rbx, %rax
+        addq %rbx, %rax
+
+        Expected result: %rax = 10
+        """
+        system = System()
+        encoded_program = "30f3050000000000000030f1040000000000000061317420000000000000000020306030712000000000000000"
+        byte_list = Memory.hex_string_to_bytes(encoded_program)
+        for i, byte in enumerate(byte_list):
+            system.mem.main[i] = byte
+
+        while run(system):
+            pass
+        self.assertTrue(system.registers[0] == 10)
+
+    def test_jge(self):
+        """
+        irmovq 5, %rbx
+        irmovq 6, %rcx
+        subq %rbx, %rcx
+        jge next
+        end: halt
+        next: rrmovq %rbx, %rax
+        subq %rbx, %rax
+        jge second
+        halt
+        second:
+        rrmovq %rbx, %rax
+
+        Expected result: %rax = 5
+        """
+        system = System()
+        encoded_program = "30f3050000000000000030f10600000000000000613175200000000000000000203061" \
+                          "30752e00000000000000002030"
+        byte_list = Memory.hex_string_to_bytes(encoded_program)
+        for i, byte in enumerate(byte_list):
+            system.mem.main[i] = byte
+
+        while run(system):
+            pass
+        self.assertTrue(system.registers[0] == 5)
+
+    def test_jg(self):
+        """
+        irmovq 5, %rbx
+        irmovq 6, %rcx
+        subq %rbx, %rcx
+        jge next
+        end: halt
+        next: rrmovq %rbx, %rax
+
+        Expected result: %rax = 5
+        """
+        system = System()
+        encoded_program = "30f3050000000000000030f106000000000000006131752000000000000000002030"
+        byte_list = Memory.hex_string_to_bytes(encoded_program)
+        for i, byte in enumerate(byte_list):
+            system.mem.main[i] = byte
+
+        while run(system):
+            pass
+        self.assertTrue(system.registers[0] == 5)
+
+    def test_cmovle(self):
+        """
+        irmovq 22, %r8
+        subq %rax, %rbx
+        cmovle %r8, %rax
+        %rax = 22
+        """
+        system = System()
+        encoded_program = "30f8160000000000000061032180"
+        byte_list = Memory.hex_string_to_bytes(encoded_program)
+        for i, byte in enumerate(byte_list):
+            system.mem.main[i] = byte
+
+        while run(system):
+            pass
+        self.assertTrue(system.registers[0] == 22)
+
+    def test_cmovg(self):
+        """
+        irmovq 22, %r8
+        subq %rax, %rbx
+        cmovg %r8, %rax
+        %rax = 0
+        """
+        system = System()
+        encoded_program = "30f8160000000000000061032680"
+        byte_list = Memory.hex_string_to_bytes(encoded_program)
+        for i, byte in enumerate(byte_list):
+            system.mem.main[i] = byte
+
+        while run(system):
+            pass
+        self.assertTrue(system.registers[0] == 0)

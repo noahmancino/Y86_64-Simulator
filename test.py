@@ -355,3 +355,50 @@ class TestISAImplementation(unittest.TestCase):
         while run(system):
             pass
         self.assertTrue(system.registers[0] == 0)
+
+    def test_call_ret(self):
+        """
+        irmovq stack, %rsp
+
+        call next
+        irmovq 5, %r8
+        addq %r8, %rax
+        halt
+
+        next:
+        irmovq 100, %rax
+        ret
+
+        .pos 0x200
+        stack:
+        """
+        system = System()
+        encoded_program = "30f4000200000000000080200000000000000030f8050000000000000060800030f0640000000000000090"
+        byte_list = Memory.hex_string_to_bytes(encoded_program)
+        for i, byte in enumerate(byte_list):
+            system.mem.main[i] = byte
+
+        while run(system):
+            pass
+        self.assertTrue(system.registers[0] == 105)
+
+
+    def test_pushq_popq(self):
+        """
+        irmovq stack, %rsp
+        irmovq 10, %r8
+        pushq %r8
+        popq %rax
+
+        .pos 0x200
+        stack:
+        """
+        system = System()
+        encoded_program = "30f4000200000000000030f80a00000000000000a08fb00f"
+        byte_list = Memory.hex_string_to_bytes(encoded_program)
+        for i, byte in enumerate(byte_list):
+            system.mem.main[i] = byte
+
+        while run(system):
+            pass
+        self.assertTrue(system.registers[0] == 10)

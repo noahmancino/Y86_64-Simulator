@@ -59,7 +59,6 @@ class System:
         elif op_code == 2:
             self.registers[dest] = src_val & dest_val
         elif op_code == 3:
-            # todo: xor, not or, dummy
             self.registers[dest] = src_val ^ dest_val
         else:
             self.status = Status.INS

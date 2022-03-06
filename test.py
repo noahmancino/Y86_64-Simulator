@@ -2,6 +2,7 @@ import unittest
 from instructions import System, Status
 from memory import Memory
 from Y86_64 import run
+from assembler import tokenize, map_to_mem
 
 class TestISAImplementation(unittest.TestCase):
 
@@ -402,3 +403,26 @@ class TestISAImplementation(unittest.TestCase):
         while run(system):
             pass
         self.assertTrue(system.registers[0] == 10)
+
+    def test_tokenize(self):
+        test_string = '''
+        irmovq stack, %rsp
+
+                    call next
+                    irmovq 5, %r8
+                    addq %r8, %rax
+                    halt
+                    
+                    next: 
+                    irmovq 100, %rax
+                    ret 
+                    
+                    
+                    .pos 0x200
+                    
+                    stack:
+                
+                    '''
+        print(map_to_mem(tokenize(test_string.split('\n'))))
+        self.assertTrue(True)
+

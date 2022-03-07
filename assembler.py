@@ -57,7 +57,11 @@ def map_to_mem(tokens):
 
     return mem_map
 
+
 def encode_ins(instruction_tokens):
+    """
+    Translates a single instruction from y86_64 assembly to machine code
+    """
     instruction = instruction_tokens[0]
 
     if instruction == "halt":
@@ -144,11 +148,7 @@ def encode_ins(instruction_tokens):
         return f'b0{reg_a}f'
 
 
-
-
-
-
-def encode(mapped_tokens):
+def encode(mapped_tokens, system):
     """
-    Translates instructions to machine code and loads them into the system.
+    Translates y86_64 instructions to machine code and loads them into the system.
     """

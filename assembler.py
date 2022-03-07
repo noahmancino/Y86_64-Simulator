@@ -1,4 +1,5 @@
 from instructions import System
+from memory import Memory
 INS_SIZE = {
     "halt": 1, "nop": 1, "rrmovq": 2, "irmovq": 10, "rmmovq": 10, "mrmovq": 10, "addq": 2, "subq": 2, "andq": 2,
     "xorq": 2, "jmp": 9, "jle": 9, "jl": 9, "je": 9, "jne": 9, "jge": 9, "jg": 9, "cmovle": 2, "cmovl": 2,
@@ -61,15 +62,35 @@ def encode_ins(instruction_tokens):
 
     if instruction == "halt":
         return "00"
+
     if instruction == "nop":
         return "10"
+
     if instruction == "rrmovq":
-        reg_a = "{0:x}".format(REGISTER_INDEX[instruction_tokens[1]])
+        reg_a = REGISTER_INDEX[instruction_tokens[1]]
+        reg_a = f"{reg_a:x}"
         reg_b = "{0:x}".format(instruction_tokens[2])
-        return "20" + reg_a + reg_b
+        return f'20{reg_a}{reg_b}'
+
     if instruction == "irmovq":
-        reg_b = in
-        # Remember that the word needs to be little endian
+        immediate = int(instruction_tokens[1])
+        immediate = Memory.endian_conversion(f'{immediate:x}')
+        reg_b = REGISTER_INDEX[instruction_tokens[2]]
+        reg_b = "{0:x}".format(reg_b)
+        return f'30f{reg_b}{immediate:0<16}'
+
+    if instruction == "rmmovq":
+        reg_a = REGISTER_INDEX[instruction_tokens[1]]
+        reg_a = f"{reg_a:x}"
+        tok_two = instruction_tokens[2].replace(')', '')
+        dest, reg_b = tok_two.split('(')
+        reg_b = REGISTER_INDEX[reg_b]
+        reg_b = f'{reg_b:x}'
+        dest = int(dest)
+        dest = Memory.endian_conversion(f'{dest:x}')
+        return f'40{reg_a}{reg_b}{dest:0<16}'
+
+    if instruction == "mrmovq"
 
 
 def encode(mapped_tokens):

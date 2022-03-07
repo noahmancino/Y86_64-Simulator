@@ -11,7 +11,7 @@ class Memory:
     def __init__(self):
         # Main memory is little endian, and holds 'bytes' which in this case are just python integers from 0 to 2^8
         # TODO: consider using bytearray type
-        self.main = [0 for _ in range(1000)]
+        self.main = [0 for _ in range(4096)]
 
     def write(self, src, destination):
         """
@@ -97,8 +97,19 @@ class Memory:
         return Memory.overflowing_add(num1, num2)
 
     @staticmethod
+    #TODO: Test this method
     def hex_string_to_bytes(hex_string):
         # split the hex string into a list of two hex chars at a time
         byte_list = [hex_string[i:i+2] for i in range(0, len(hex_string), 2)]
         byte_list = [int(byte, 16) for byte in byte_list]
         return byte_list
+
+    @staticmethod
+    def endian_conversion(hex_string):
+        """
+        Takes a string of hex digits representing a series of bytes and reverses their endianess.
+        """
+        byte_list = [hex_string[i:i+2] for i in range(0, len(hex_string), 2)]
+        byte_list.reverse()
+        return ''.join(byte_list)
+

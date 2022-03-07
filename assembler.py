@@ -19,10 +19,12 @@ def tokenize(lines):
     """
     Tokenizes a y86-64 assembly file
     """
+    # TODO: Decide where to check input validity
     tokens = []
     for line in lines:
         line = line.rstrip('#')
         line = line.replace('#', '')
+        # Might be smart to factor out / simplify the logic around colons
         if ':' in line:
             line = line.replace(':', '\n')
             comma_seperated = line.split('\n')
@@ -37,14 +39,14 @@ def tokenize(lines):
     return tokens
 
 
-def map_to_mem(tokens):
+def mem_map(tokens):
     """
     Maps each lists of tokens (i.e each line) to their place in memory, and returns the map as a list of tuples
     """
     place = 0
-    mem_map = []
+    m_map = []
     for token_list in tokens:
-        mem_map.append((place, token_list))
+        m_map.append((place, token_list))
         first_token = token_list[0]
         if first_token in INS_SIZE.keys():
             place += INS_SIZE[first_token]
@@ -55,7 +57,18 @@ def map_to_mem(tokens):
         elif first_token == ".pos":
             place = int(token_list[1], base=16)
 
-    return mem_map
+    # now to process labels. step 1: make a map between labels and their place in memory
+    directives = ('.align', '.quad', '.pos')
+    instructions = tuple(INS_SIZE.keys())
+    label_dict = {}
+    for place, token_list in m_map:
+        if token_list[0] not in instructions and token_list[0] not in directives:
+            if len(token_list) > 1:
+                raise Exception
+            else:
+                label_dict[token_list[0]] = place
+
+    return m_map
 
 
 def encode_ins(instruction_tokens):

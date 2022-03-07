@@ -2,7 +2,7 @@ import unittest
 from instructions import System, Status
 from memory import Memory
 from Y86_64 import run
-from assembler import tokenize, map_to_mem
+from assembler import tokenize, mem_map
 
 class TestISAImplementation(unittest.TestCase):
 
@@ -423,6 +423,6 @@ class TestISAImplementation(unittest.TestCase):
                     stack:
                 
                     '''
-        print(map_to_mem(tokenize(test_string.split('\n'))))
+        print(mem_map(tokenize(test_string.split('\n'))))
         self.assertTrue(True)
 

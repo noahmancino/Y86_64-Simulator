@@ -68,20 +68,21 @@ def encode_ins(instruction_tokens):
 
     if instruction == "rrmovq":
         reg_a = REGISTER_INDEX[instruction_tokens[1]]
-        reg_a = f"{reg_a:x}"
-        reg_b = "{0:x}".format(instruction_tokens[2])
+        reg_a = f'{reg_a:x}'
+        reg_b = REGISTER_INDEX[instruction_tokens[1]]
+        reg_b = f'{reg_b:x}'
         return f'20{reg_a}{reg_b}'
 
     if instruction == "irmovq":
         immediate = int(instruction_tokens[1])
         immediate = Memory.endian_conversion(f'{immediate:x}')
         reg_b = REGISTER_INDEX[instruction_tokens[2]]
-        reg_b = "{0:x}".format(reg_b)
+        reg_b = f'{reg_b:x}'
         return f'30f{reg_b}{immediate:0<16}'
 
     if instruction == "rmmovq":
         reg_a = REGISTER_INDEX[instruction_tokens[1]]
-        reg_a = f"{reg_a:x}"
+        reg_a = f'{reg_a:x}'
         tok_two = instruction_tokens[2].replace(')', '')
         dest, reg_b = tok_two.split('(')
         reg_b = REGISTER_INDEX[reg_b]
@@ -90,7 +91,61 @@ def encode_ins(instruction_tokens):
         dest = Memory.endian_conversion(f'{dest:x}')
         return f'40{reg_a}{reg_b}{dest:0<16}'
 
-    if instruction == "mrmovq"
+    if instruction == "mrmovq":
+        tok_one = instruction_tokens[1].replace(')', '')
+        dest, reg_a = tok_one.split('(')
+        reg_a = REGISTER_INDEX[reg_a]
+        reg_a = f'{reg_a:x}'
+        dest = int(dest)
+        dest = Memory.endian_conversion(f'{dest:x}')
+        reg_b = REGISTER_INDEX[instruction_tokens[2]]
+        reg_b = f'{reg_b:x}'
+        return f'50{reg_a}{reg_b}{dest:0<16}'
+
+    op_functions = {'addq': 0, 'subq': 1, 'andq': 2, 'xorq': 3}
+    if instruction in op_functions.keys():
+        reg_a = REGISTER_INDEX[instruction_tokens[1]]
+        reg_a = f'{reg_a:x}'
+        reg_b = REGISTER_INDEX[instruction_tokens[2]]
+        reg_b = f'{reg_b:x}'
+        return f'6{op_functions[instruction]}{reg_a}{reg_b}'
+
+    jmp_functions = {'jmp': 0, 'jle': 1, 'jl': 2, 'je': 3, 'jne': 4, 'jge': 5, 'jg': 6}
+    if instruction in jmp_functions.keys():
+        # TODO: make sure i'm making the right assumptions about the endianess and (lack of) preceding 0x
+        dest = int(instruction_tokens[1])
+        dest = f'{dest:x}'
+        return f'7{jmp_functions[instruction]}{dest:0<16}'
+
+    cmov_functions = {'cmovle': 1, 'cmovl': 2, 'cmove': 3, 'cmovne': 4, 'cmovge': 5, 'cmovg': 6}
+    if instruction in cmov_functions.keys():
+        reg_a = REGISTER_INDEX[instruction_tokens[1]]
+        reg_a = f'{reg_a:x}'
+        reg_b = REGISTER_INDEX[instruction_tokens[1]]
+        reg_b = f'{reg_b:x}'
+        return f'2{cmov_functions[instruction_tokens]}{reg_a}{reg_b}'
+
+    if instruction == 'call':
+        dest = int(instruction_tokens[1])
+        dest = f'{dest:x}'
+        return f'80{dest:0<16}'
+
+    if instruction == 'ret':
+        return '90'
+
+    if instruction == 'pushq':
+        reg_a = REGISTER_INDEX[instruction_tokens[1]]
+        reg_a = f'{reg_a:x}'
+        return f'a0{reg_a}f'
+
+    if instruction == 'popq':
+        reg_a = REGISTER_INDEX[instruction_tokens[1]]
+        reg_a = f'{reg_a:x}'
+        return f'b0{reg_a}f'
+
+
+
+
 
 
 def encode(mapped_tokens):

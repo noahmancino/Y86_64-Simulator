@@ -2,7 +2,7 @@ import unittest
 from instructions import System, Status
 from memory import Memory
 from Y86_64 import run
-from assembler import tokenize, mem_map
+from assembler import tokenize, mem_map, encode
 
 class TestISAImplementation(unittest.TestCase):
 
@@ -406,23 +406,21 @@ class TestISAImplementation(unittest.TestCase):
 
     def test_tokenize(self):
         test_string = '''
-        irmovq stack, %rsp
+            irmovq 5, %rbx
+        irmovq 4, %rcx
+        subq %rbx, %rcx
+        jne next
+        end: halt
+        next: rrmovq %rbx, %rax
+        addq %rbx, %rax
+        '''
+        sys = System()
+        mapped = mem_map(tokenize(test_string.split('\n')))
+        encode(mapped, sys)
+        print(sys.mem.main[22:31])
+        while run(sys):
+            pass
 
-                    call next
-                    irmovq 5, %r8
-                    addq %r8, %rax
-                    halt
-                    
-                    next: 
-                    irmovq 100, %rax
-                    ret 
-                    
-                    
-                    .pos 0x200
-                    
-                    stack:
-                
-                    '''
-        print(mem_map(tokenize(test_string.split('\n'))))
+        print(sys.registers[0])
         self.assertTrue(True)
 

@@ -150,12 +150,12 @@ class System:
         self.program_counter += 10
 
     def cmovxx(self, src, dest, op_code):
-
         will_move = False
 
         if op_code == 0:
             will_move = True
         elif op_code == 1:
+            print('here')
             will_move = self.zero_flag or (self.sign_flag != self.overflow_flag)
         elif op_code == 2:
             will_move = self.sign_flag != self.overflow_flag

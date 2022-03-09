@@ -14,14 +14,19 @@ REGISTER_INDEX = {
     "%rax": 0, "%rcx": 1, "%rdx": 2, "%rbx": 3, "%rsp": 4, "%rbp": 5, "%rsi": 6, "%rdi": 7, "%r8": 8, "%r9": 9,
     "%r10": 10, "%r11": 11, "%r12": 12, "%r13": 13, "%r14": 14}
 
+#TODO: check inputs for validity
+#TODO: make hex optional for literals rather than deafult
+#TODO: allow literals instead of just labels
+
 
 def tokenize(lines):
     """
     Tokenizes a y86-64 assembly file
     """
-    # TODO: Decide where to check input validity
     tokens = []
     for line in lines:
+        # The replacement needs to happen for for comma seperated operands
+        replace_commas = lambda token: token.replace(',', '')
         line = line.rstrip('#')
         line = line.replace('#', '')
         # Might be smart to factor out / simplify the logic around colons
@@ -29,12 +34,13 @@ def tokenize(lines):
             line = line.replace(':', '\n')
             comma_seperated = line.split('\n')
             if not comma_seperated[0].isspace() and comma_seperated[0]:
-                tokens.append(comma_seperated[0].split())
+                # Ugly stuff!!!
+                tokens.append(list(map(replace_commas, comma_seperated[0].split())))
             if not comma_seperated[1].isspace() and comma_seperated[1]:
-                tokens.append(comma_seperated[1].split())
+                tokens.append(list(map(replace_commas, comma_seperated[1].split())))
         else:
             if not line.isspace() and line:
-                tokens.append(line.split())
+                tokens.append(list(map(replace_commas, line.split())))
 
     return tokens
 
@@ -46,12 +52,14 @@ def mem_map(tokens):
     place = 0
     m_map = []
     for token_list in tokens:
-        m_map.append((place, token_list))
+        m_map.append([place, token_list])
         first_token = token_list[0]
         if first_token in INS_SIZE.keys():
             place += INS_SIZE[first_token]
         elif first_token == ".align":
-            place += place % int(token_list[1])
+            alignment = int(token_list[1])
+            place -= place % alignment
+            place += alignment
         elif first_token == ".quad":
             place += 8
         elif first_token == ".pos":
@@ -64,9 +72,19 @@ def mem_map(tokens):
     for place, token_list in m_map:
         if token_list[0] not in instructions and token_list[0] not in directives:
             if len(token_list) > 1:
-                raise Exception
+                pass
+                # print(token_list)
+                # raise Exception
             else:
                 label_dict[token_list[0]] = place
+
+    # step 2: replace labels with memory locations
+    # TODO: Note, this won't work if my understanding of list mutability isn't right.
+    for _, token_list in m_map:
+        label_operand_instructions = ('irmovq', 'jmp', 'jle', 'jl', 'je', 'jne', 'jge', 'jg', 'call')
+        if token_list[0] in label_operand_instructions:
+            if not token_list[1].isdigit():
+                token_list[1] = label_dict[token_list[1]]
 
     return m_map
 
@@ -86,16 +104,18 @@ def encode_ins(instruction_tokens):
     if instruction == "rrmovq":
         reg_a = REGISTER_INDEX[instruction_tokens[1]]
         reg_a = f'{reg_a:x}'
-        reg_b = REGISTER_INDEX[instruction_tokens[1]]
+        reg_b = REGISTER_INDEX[instruction_tokens[2]]
         reg_b = f'{reg_b:x}'
         return f'20{reg_a}{reg_b}'
 
     if instruction == "irmovq":
         immediate = int(instruction_tokens[1])
-        immediate = Memory.endian_conversion(f'{immediate:x}')
+        immediate = f'{immediate:x}'
+        immediate = f'{immediate:0>16}'
+        immediate = Memory.endian_conversion(immediate)
         reg_b = REGISTER_INDEX[instruction_tokens[2]]
         reg_b = f'{reg_b:x}'
-        return f'30f{reg_b}{immediate:0<16}'
+        return f'30f{reg_b}{immediate}'
 
     if instruction == "rmmovq":
         reg_a = REGISTER_INDEX[instruction_tokens[1]]
@@ -105,8 +125,10 @@ def encode_ins(instruction_tokens):
         reg_b = REGISTER_INDEX[reg_b]
         reg_b = f'{reg_b:x}'
         dest = int(dest)
-        dest = Memory.endian_conversion(f'{dest:x}')
-        return f'40{reg_a}{reg_b}{dest:0<16}'
+        dest = f'{dest:x}'
+        dest = f'{dest:0>16}'
+        dest = Memory.endian_conversion(dest)
+        return f'40{reg_a}{reg_b}{dest}'
 
     if instruction == "mrmovq":
         tok_one = instruction_tokens[1].replace(')', '')
@@ -138,9 +160,9 @@ def encode_ins(instruction_tokens):
     if instruction in cmov_functions.keys():
         reg_a = REGISTER_INDEX[instruction_tokens[1]]
         reg_a = f'{reg_a:x}'
-        reg_b = REGISTER_INDEX[instruction_tokens[1]]
+        reg_b = REGISTER_INDEX[instruction_tokens[2]]
         reg_b = f'{reg_b:x}'
-        return f'2{cmov_functions[instruction_tokens]}{reg_a}{reg_b}'
+        return f'2{cmov_functions[instruction]}{reg_a}{reg_b}'
 
     if instruction == 'call':
         dest = int(instruction_tokens[1])
@@ -165,3 +187,16 @@ def encode(mapped_tokens, system):
     """
     Translates y86_64 instructions to machine code and loads them into the system.
     """
+    for place, token_list in mapped_tokens:
+        if token_list[0] in INS_SIZE.keys():
+            encoded_instruction = encode_ins(token_list)
+            encoded_bytes = [int(encoded_instruction[i:i+2], 16) for i in range(0, len(encoded_instruction), 2)]
+            for i, byte in enumerate(encoded_bytes):
+                system.mem.main[place + i] = byte
+
+        if token_list[0] == '.quad':
+            value = token_list[1]
+            byte_list = [int(value[i:i+2], 16) for i in range(0, len(value), 2)]
+            byte_list.reverse()
+            for i, a_byte in enumerate(byte_list):
+                system.mem.main[place + i] = a_byte

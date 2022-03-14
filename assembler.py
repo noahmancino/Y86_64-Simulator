@@ -1,5 +1,6 @@
 from instructions import System
 from memory import Memory
+
 INS_SIZE = {
     "halt": 1, "nop": 1, "rrmovq": 2, "irmovq": 10, "rmmovq": 10, "mrmovq": 10, "addq": 2, "subq": 2, "andq": 2,
     "xorq": 2, "jmp": 9, "jle": 9, "jl": 9, "je": 9, "jne": 9, "jge": 9, "jg": 9, "cmovle": 2, "cmovl": 2,
@@ -7,16 +8,29 @@ INS_SIZE = {
 INS_OP_FUNCTION = {
     "halt": [0, 0], "nop": [1, 0], "rrmovq": [2, 0], "irmovq": [3, 0], "rmmovq": [4, 0], "mrmovq": [5, 0],
     "addq": [6, 0], "subq": [6, 1], "andq": [6, 2], "xorq": [6, 3], "jmp": [7, 0], "jle": [7, 1], "jl": [7, 2],
-    "je": [7, 3], "jne": [7, 4], "jge": [7, 5], "jg": [7, 6], "cmovle": [2, 1], "cmovl": [2, 2], "cmove": [2,3],
+    "je": [7, 3], "jne": [7, 4], "jge": [7, 5], "jg": [7, 6], "cmovle": [2, 1], "cmovl": [2, 2], "cmove": [2, 3],
     "cmovne": [2, 4], "cmovge": [2, 5], "cmovg": [2, 6], "call": [8, 0], "ret": [9, 0], "pushq": [10, 0],
     "popq": [11, 0]}
 REGISTER_INDEX = {
     "%rax": 0, "%rcx": 1, "%rdx": 2, "%rbx": 3, "%rsp": 4, "%rbp": 5, "%rsi": 6, "%rdi": 7, "%r8": 8, "%r9": 9,
     "%r10": 10, "%r11": 11, "%r12": 12, "%r13": 13, "%r14": 14}
 
-#TODO: check inputs for validity
-#TODO: make hex optional for literals rather than deafult
-#TODO: allow literals instead of just labels
+
+# TODO: check inputs for validity
+# TODO: make hex optional for literals rather than default
+# TODO: allow literals instead of just labels
+
+def string_to_int(dig_string):
+    """
+    Given a string of digits, returns the int those digits represent. If the digit string begins with 0x, it is
+    assumed base 16. Otherwise, it is assumed base 10. Also ignores leading $ that demarcates int literals
+    """
+    if dig_string[0] == '$':
+        dig_string = dig_string[1:]
+    if len(dig_string) >= 3:
+        if dig_string[0:2] == '0x':
+            return int(dig_string, 16)
+    return int(dig_string)
 
 
 def tokenize(lines):
@@ -24,20 +38,20 @@ def tokenize(lines):
     Tokenizes a y86-64 assembly file
     """
     tokens = []
+    replace_commas = lambda token: token.replace(',', '')
     for line in lines:
         # The replacement needs to happen for for comma seperated operands
-        replace_commas = lambda token: token.replace(',', '')
         line = line.rstrip('#')
         line = line.replace('#', '')
         # Might be smart to factor out / simplify the logic around colons
         if ':' in line:
             line = line.replace(':', '\n')
-            comma_seperated = line.split('\n')
-            if not comma_seperated[0].isspace() and comma_seperated[0]:
+            colon_seperated = line.split('\n')
+            if not colon_seperated[0].isspace() and colon_seperated[0]:
                 # Ugly stuff!!!
-                tokens.append(list(map(replace_commas, comma_seperated[0].split())))
-            if not comma_seperated[1].isspace() and comma_seperated[1]:
-                tokens.append(list(map(replace_commas, comma_seperated[1].split())))
+                tokens.append(list(map(replace_commas, colon_seperated[0].split())))
+            if not colon_seperated[1].isspace() and colon_seperated[1]:
+                tokens.append(list(map(replace_commas, colon_seperated[1].split())))
         else:
             if not line.isspace() and line:
                 tokens.append(list(map(replace_commas, line.split())))
@@ -57,13 +71,13 @@ def mem_map(tokens):
         if first_token in INS_SIZE.keys():
             place += INS_SIZE[first_token]
         elif first_token == ".align":
-            alignment = int(token_list[1])
+            alignment = string_to_int(token_list[1])
             place -= place % alignment
             place += alignment
         elif first_token == ".quad":
             place += 8
         elif first_token == ".pos":
-            place = int(token_list[1], base=16)
+            place = string_to_int(token_list[1])
 
     # now to process labels. step 1: make a map between labels and their place in memory
     directives = ('.align', '.quad', '.pos')
@@ -72,9 +86,8 @@ def mem_map(tokens):
     for place, token_list in m_map:
         if token_list[0] not in instructions and token_list[0] not in directives:
             if len(token_list) > 1:
-                pass
-                # print(token_list)
-                # raise Exception
+                print(token_list)
+                raise Exception
             else:
                 label_dict[token_list[0]] = place
 
@@ -109,7 +122,9 @@ def encode_ins(instruction_tokens):
         return f'20{reg_a}{reg_b}'
 
     if instruction == "irmovq":
-        immediate = int(instruction_tokens[1])
+        print(instruction_tokens[1])
+        immediate = string_to_int(instruction_tokens[1])
+        print(immediate)
         immediate = f'{immediate:x}'
         immediate = f'{immediate:0>16}'
         immediate = Memory.endian_conversion(immediate)
@@ -124,7 +139,7 @@ def encode_ins(instruction_tokens):
         dest, reg_b = tok_two.split('(')
         reg_b = REGISTER_INDEX[reg_b]
         reg_b = f'{reg_b:x}'
-        dest = int(dest)
+        dest = int(dest) if dest else 0
         dest = f'{dest:x}'
         dest = f'{dest:0>16}'
         dest = Memory.endian_conversion(dest)
@@ -135,7 +150,7 @@ def encode_ins(instruction_tokens):
         dest, reg_a = tok_one.split('(')
         reg_a = REGISTER_INDEX[reg_a]
         reg_a = f'{reg_a:x}'
-        dest = int(dest)
+        dest = int(dest) if dest else 0
         dest = Memory.endian_conversion(f'{dest:x}')
         reg_b = REGISTER_INDEX[instruction_tokens[2]]
         reg_b = f'{reg_b:x}'
@@ -190,13 +205,13 @@ def encode(mapped_tokens, system):
     for place, token_list in mapped_tokens:
         if token_list[0] in INS_SIZE.keys():
             encoded_instruction = encode_ins(token_list)
-            encoded_bytes = [int(encoded_instruction[i:i+2], 16) for i in range(0, len(encoded_instruction), 2)]
+            encoded_bytes = [int(encoded_instruction[i:i + 2], 16) for i in range(0, len(encoded_instruction), 2)]
             for i, byte in enumerate(encoded_bytes):
                 system.mem.main[place + i] = byte
 
         if token_list[0] == '.quad':
             value = token_list[1]
-            byte_list = [int(value[i:i+2], 16) for i in range(0, len(value), 2)]
+            byte_list = [int(value[i:i + 2], 16) for i in range(0, len(value), 2)]
             byte_list.reverse()
             for i, a_byte in enumerate(byte_list):
                 system.mem.main[place + i] = a_byte

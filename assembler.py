@@ -1,4 +1,3 @@
-from instructions import System
 from memory import Memory
 
 INS_SIZE = {
@@ -17,20 +16,19 @@ REGISTER_INDEX = {
 
 
 # TODO: check inputs for validity
-# TODO: make hex optional for literals rather than default
-# TODO: allow literals instead of just labels
 
 def string_to_int(dig_string):
     """
     Given a string of digits, returns the int those digits represent. If the digit string begins with 0x, it is
-    assumed base 16. Otherwise, it is assumed base 10. Also ignores leading $ that demarcates int literals
+    assumed base 16. Otherwise, it is assumed base 10. Also ignores leading $ that demarcates int literals.
+    Should probably raise an exception if the input is not a valid int but i'm just trying to get this finished now
     """
     if dig_string[0] == '$':
         dig_string = dig_string[1:]
     if len(dig_string) >= 3:
         if dig_string[0:2] == '0x':
-            return int(dig_string, 16)
-    return int(dig_string)
+            return int(dig_string, 16) if dig_string[2:].isdigit() else None
+    return int(dig_string) if dig_string.isdigit() else None
 
 
 def tokenize(lines):
@@ -89,14 +87,15 @@ def mem_map(tokens):
                 print(token_list)
                 raise Exception
             else:
-                label_dict[token_list[0]] = place
+                label_dict[token_list[0]] = str(place)
 
     # step 2: replace labels with memory locations
     # TODO: Note, this won't work if my understanding of list mutability isn't right.
     for _, token_list in m_map:
         label_operand_instructions = ('irmovq', 'jmp', 'jle', 'jl', 'je', 'jne', 'jge', 'jg', 'call')
         if token_list[0] in label_operand_instructions:
-            if not token_list[1].isdigit():
+            # test if token_list[1] if a representation of an int
+            if string_to_int(token_list[1]) is None:
                 token_list[1] = label_dict[token_list[1]]
 
     return m_map
@@ -122,9 +121,7 @@ def encode_ins(instruction_tokens):
         return f'20{reg_a}{reg_b}'
 
     if instruction == "irmovq":
-        print(instruction_tokens[1])
         immediate = string_to_int(instruction_tokens[1])
-        print(immediate)
         immediate = f'{immediate:x}'
         immediate = f'{immediate:0>16}'
         immediate = Memory.endian_conversion(immediate)
@@ -167,7 +164,7 @@ def encode_ins(instruction_tokens):
     jmp_functions = {'jmp': 0, 'jle': 1, 'jl': 2, 'je': 3, 'jne': 4, 'jge': 5, 'jg': 6}
     if instruction in jmp_functions.keys():
         # TODO: make sure i'm making the right assumptions about the endianess and (lack of) preceding 0x
-        dest = int(instruction_tokens[1])
+        dest = string_to_int(instruction_tokens[1])
         dest = f'{dest:x}'
         return f'7{jmp_functions[instruction]}{dest:0<16}'
 

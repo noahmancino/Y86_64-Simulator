@@ -414,6 +414,7 @@ class TestISAImplementation(unittest.TestCase):
         end: halt
         next: rrmovq %rbx, %rax
         addq %rbx, %rax
+        jmp 0x100
         '''
         sys = System()
         mapped = mem_map(tokenize(test_string.split('\n')))

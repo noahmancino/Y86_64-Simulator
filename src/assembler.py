@@ -1,3 +1,4 @@
+from typing import final
 from memory import Memory
 
 INS_SIZE = {
@@ -22,18 +23,31 @@ def string_to_int(dig_string):
     Given a string of digits, returns the int those digits represent. If the digit string begins with 0x, it is
     assumed base 16. Otherwise, it is assumed base 10. Also ignores leading $ that demarcates int literals.
     Should probably raise an exception if the input is not a valid int but i'm just trying to get this finished now
+
+    :param dig_string: String of digits
+    :returns: Int represented by the string of digits 
     """
+    original_digit_string = dig_string
     if dig_string[0] == '$':
         dig_string = dig_string[1:]
-    if len(dig_string) >= 3:
-        if dig_string[0:2] == '0x':
-            return int(dig_string, 16) if dig_string[2:].isdigit() else None
-    return int(dig_string) if dig_string.isdigit() else None
+    # short-circut to avoid index error
+    if len(dig_string) >= 3 and dig_string[0:2] == '0x':
+        print(dig_string)
+        dig_string = dig_string[2:]
+        print(dig_string)
 
+    try:
+        return int(dig_string)
+    except ValueError:
+        print(f"Invalid digit format or label {original_digit_string}. Remember labels can only use alphebetical characters")
+        raise ValueError
 
 def tokenize(lines):
     """
     Tokenizes a y86-64 assembly file
+
+    :param lines: A list of Y86_64 source code code strings
+    :return: A list of tokenized lines
     """
     tokens = []
     replace_commas = lambda token: token.replace(',', '')
@@ -77,7 +91,7 @@ def mem_map(tokens):
         elif first_token == ".pos":
             place = string_to_int(token_list[1])
 
-    # now to process labels. step 1: make a map between labels and their place in memory
+    # the rest of the logic in this function just deals with labels. 
     directives = ('.align', '.quad', '.pos')
     instructions = tuple(INS_SIZE.keys())
     label_dict = {}
@@ -89,13 +103,11 @@ def mem_map(tokens):
             else:
                 label_dict[token_list[0]] = str(place)
 
-    # step 2: replace labels with memory locations
-    # TODO: Note, this won't work if my understanding of list mutability isn't right.
     for _, token_list in m_map:
         label_operand_instructions = ('irmovq', 'jmp', 'jle', 'jl', 'je', 'jne', 'jge', 'jg', 'call')
         if token_list[0] in label_operand_instructions:
             # test if token_list[1] if a representation of an int
-            if string_to_int(token_list[1]) is None:
+            if token_list[1].isalpha():
                 token_list[1] = label_dict[token_list[1]]
 
     return m_map

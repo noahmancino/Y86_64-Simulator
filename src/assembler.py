@@ -1,4 +1,3 @@
-from typing import final
 from memory import Memory
 
 INS_SIZE = {
@@ -17,6 +16,8 @@ REGISTER_INDEX = {
 
 
 # TODO: check inputs for validity
+# TODO: more tests
+# TODO: consider making labels behave 'correctly'
 
 def string_to_int(dig_string):
     """
@@ -40,7 +41,7 @@ def string_to_int(dig_string):
         return int(dig_string)
     except ValueError:
         print(f"Invalid digit format or label {original_digit_string}. Remember labels can only use alphebetical characters")
-        raise ValueError
+        raise Exception
 
 def tokenize(lines):
     """
@@ -50,30 +51,33 @@ def tokenize(lines):
     :return: A list of tokenized lines
     """
     tokens = []
-    replace_commas = lambda token: token.replace(',', '')
     for line in lines:
         # The replacement needs to happen for for comma seperated operands
         line = line.rstrip('#')
         line = line.replace('#', '')
-        # Might be smart to factor out / simplify the logic around colons
+        line = line.replace(',', ' ')
+        # NOTE: Consider changing how colons (and relatedly, labels) are handled. 
         if ':' in line:
             line = line.replace(':', '\n')
             colon_seperated = line.split('\n')
             if not colon_seperated[0].isspace() and colon_seperated[0]:
-                # Ugly stuff!!!
-                tokens.append(list(map(replace_commas, colon_seperated[0].split())))
+                tokens.append(colon_seperated[0].split())
             if not colon_seperated[1].isspace() and colon_seperated[1]:
-                tokens.append(list(map(replace_commas, colon_seperated[1].split())))
+                tokens.append(colon_seperated[1].split())
         else:
             if not line.isspace() and line:
-                tokens.append(list(map(replace_commas, line.split())))
-
+                tokens.append(line.split())
     return tokens
 
-
+# FIXME: defining labels doesn't require a comma
 def mem_map(tokens):
     """
     Maps each lists of tokens (i.e each line) to their place in memory, and returns the map as a list of tuples
+
+    :param tokens: tokenized lines, i.e output from the "tokenized" function
+    :return: A list containing the starting address of memory for each line and the tokens in the line
+
+    :Example: mem_map(['irmovq', '5', '%rbx']) -> [[0, ['irmovq', '5', '%rbx']]]
     """
     place = 0
     m_map = []
@@ -116,6 +120,9 @@ def mem_map(tokens):
 def encode_ins(instruction_tokens):
     """
     Translates a single instruction from y86_64 assembly to machine code
+
+    :instruction_tokens: List of tokens from the source code of a single Y86_64 instruction 
+    :return: The bit encoding the same instruction 
     """
     instruction = instruction_tokens[0]
 
@@ -175,7 +182,6 @@ def encode_ins(instruction_tokens):
 
     jmp_functions = {'jmp': 0, 'jle': 1, 'jl': 2, 'je': 3, 'jne': 4, 'jge': 5, 'jg': 6}
     if instruction in jmp_functions.keys():
-        # TODO: make sure i'm making the right assumptions about the endianess and (lack of) preceding 0x
         dest = string_to_int(instruction_tokens[1])
         dest = f'{dest:x}'
         return f'7{jmp_functions[instruction]}{dest:0<16}'
@@ -210,6 +216,9 @@ def encode_ins(instruction_tokens):
 def encode(mapped_tokens, system):
     """
     Translates y86_64 instructions to machine code and loads them into the system.
+
+    :param mapped_tokens: List of instructions and their place in memory, i.e output from mem_map
+    :param system: A y86_64 system object to load the instructions into
     """
     for place, token_list in mapped_tokens:
         if token_list[0] in INS_SIZE.keys():

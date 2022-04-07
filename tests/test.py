@@ -412,8 +412,8 @@ class TestISAImplementation(unittest.TestCase):
 
     def test_tokenize(self):
         test_string = '''
-        irmovq 5, %rbx
-        irmovq 4, %rcx
+        irmovq 5,%rbx
+        irmovq 4,%rcx
         rmmovq %rax, (%rax)
         subq %rbx, %rcx
         jne next
@@ -424,6 +424,7 @@ class TestISAImplementation(unittest.TestCase):
         '''
         sys = System()
         mapped = mem_map(tokenize(test_string.split('\n')))
+        print(mapped)
         encode(mapped, sys)
         print(sys.mem.main[22:31])
         while run(sys):

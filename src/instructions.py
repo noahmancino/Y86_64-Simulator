@@ -1,5 +1,5 @@
 # This module defines the System class, which holds the entire system state and methods to carry out instructions.
-import src.memory as memory
+import memory as memory
 from enum import Enum
 
 

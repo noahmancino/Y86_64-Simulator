@@ -1,4 +1,4 @@
-from src.instructions import *
+from instructions import *
 
 HELP_MESSAGE = 'Enter nothing: execute the next instruction if program is paused. Otherwise end program.\n' \
                'Enter s: display flags, program counter, registers, and status.\n' \

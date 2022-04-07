@@ -1,8 +1,14 @@
 import unittest
-from src.instructions import System, Status
-from src.memory import Memory
-from src.Y86_64 import run
-from src.assembler import tokenize, mem_map, encode
+import sys
+import os
+import os
+import sys
+sys.path.insert(0, os.path.abspath( os.path.join(os.path.dirname(__file__), 
+                                               '../src/') ))
+from instructions import System, Status
+from memory import Memory
+from Y86_64 import run
+from assembler import tokenize, mem_map, encode
 
 class TestISAImplementation(unittest.TestCase):
 

@@ -1,4 +1,4 @@
-from src.memory import Memory
+from memory import Memory
 
 INS_SIZE = {
     "halt": 1, "nop": 1, "rrmovq": 2, "irmovq": 10, "rmmovq": 10, "mrmovq": 10, "addq": 2, "subq": 2, "andq": 2,

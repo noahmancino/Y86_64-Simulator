@@ -68,7 +68,7 @@ def query_response(option, sys):
     elif option == "m":
         sys.mem.pprint()
 
-
+'''
 def main():
     sys = System()
     print("Please enter the filename of the program you would like to run.")
@@ -91,7 +91,5 @@ def main():
         query_response(option, sys)
 
     return
-
-if __name__ == '__main__':
-    main()
+'''
     

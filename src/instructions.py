@@ -147,6 +147,7 @@ class System:
         """
         source = self.registers[src_reg] + displacement
         self.registers[dest] = self.mem.read(source)
+        print(f'source_reg {src_reg}, source: {source}, stuff: {self.mem.read(source)}')
         self.program_counter += 10
 
     def cmovxx(self, src, dest, op_code):

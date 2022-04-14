@@ -413,6 +413,7 @@ class TestISAImplementation(unittest.TestCase):
     def test_tokenize(self):
         test_string = '''
         irmovq 5,%rbx
+        #blah
         irmovq 4,%rcx
         rmmovq %rax, (%rax)
         subq %rbx, %rcx

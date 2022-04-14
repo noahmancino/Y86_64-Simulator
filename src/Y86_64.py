@@ -1,4 +1,7 @@
 from instructions import *
+import assembler
+import os
+import sys
 
 HELP_MESSAGE = 'Enter nothing: execute the next instruction if program is paused. Otherwise end program.\n' \
                'Enter s: display flags, program counter, registers, and status.\n' \
@@ -17,6 +20,8 @@ def run(sys: System):
         return False
 
     next_ins = sys.mem.main[sys.program_counter:sys.program_counter + 10]
+    print('{0:x}'.format(sys.program_counter))
+    print(next_ins)
     instruction_function = next_ins[0] & 0xf
     instruction_specifier = (next_ins[0] & 0xf0) >> 4
     # Note: Not all instructions actually have register specifiers
@@ -68,28 +73,25 @@ def query_response(option, sys):
     elif option == "m":
         sys.mem.pprint()
 
-'''
+
 def main():
-    sys = System()
-    print("Please enter the filename of the program you would like to run.")
-    if input("Would you like a break between instructions? y for yes, anything else for no: ") == "y":
-        will_break = True
-    else:
-        will_break = False
+    system = System()
+    assert len(sys.argv) == 2, "Please provide one input file"
+    try:
+        with open(sys.argv[1], 'r') as file:
+            source_lines = file.readlines()
+            print(source_lines)
+    except FileNotFoundError:
+        print('Input file not found')
 
-    if will_break:
-        while run(sys):
-            while option := input("What would you like to do next? Enter h for help: "):
-                print("")
-                query_response(option, sys)
-    else:
-        while run(sys):
-            pass
-
-    while option := input("The program has finished executing. What would you like to do next? Enter h for help: "):
-        print("")
-        query_response(option, sys)
+    assembler.assemble(source_lines, system)
+    x = 0
+    while run(system) and x < 100:
+        pc = '{0:x}'.format(system.program_counter)
+        registers = ['{0:x}'.format(thing) for thing in system.registers]
+        x += 1
 
     return
-'''
-    
+
+if __name__ == '__main__':
+    main()

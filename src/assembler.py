@@ -36,12 +36,15 @@ def string_to_int(dig_string):
         print(dig_string)
         dig_string = dig_string[2:]
         print(dig_string)
+        return int(dig_string, 16)
 
     try:
         return int(dig_string)
     except ValueError:
-        print(f"Invalid digit format or label {original_digit_string}. Remember labels can only use alphebetical characters")
+        print(f"Invalid digit format or label {original_digit_string}. Remember labels can only use alphebetical "
+              f"characters")
         raise Exception
+
 
 def tokenize(lines):
     """
@@ -52,11 +55,12 @@ def tokenize(lines):
     """
     tokens = []
     for line in lines:
-        # The replacement needs to happen for for comma seperated operands
-        line = line.rstrip('#')
+        line = line[:line.find('#')]
+        print(line)
+        # The replacement needs to happen for  comma seperated operands
         line = line.replace('#', '')
         line = line.replace(',', ' ')
-        # NOTE: Consider changing how colons (and relatedly, labels) are handled. 
+        # NOTE: Consider changing how colons (and relatedly, labels) are handled.
         if ':' in line:
             line = line.replace(':', '\n')
             colon_seperated = line.split('\n')
@@ -170,7 +174,8 @@ def encode_ins(instruction_tokens):
         dest = Memory.endian_conversion(f'{dest:x}')
         reg_b = REGISTER_INDEX[instruction_tokens[2]]
         reg_b = f'{reg_b:x}'
-        return f'50{reg_a}{reg_b}{dest:0<16}'
+        print(f'50{reg_a}{reg_b}{dest:0<16}')
+        return f'50{reg_b}{reg_a}{dest:0<16}'
 
     op_functions = {'addq': 0, 'subq': 1, 'andq': 2, 'xorq': 3}
     if instruction in op_functions.keys():
@@ -183,7 +188,11 @@ def encode_ins(instruction_tokens):
     jmp_functions = {'jmp': 0, 'jle': 1, 'jl': 2, 'je': 3, 'jne': 4, 'jge': 5, 'jg': 6}
     if instruction in jmp_functions.keys():
         dest = string_to_int(instruction_tokens[1])
+        #print(dest)
         dest = f'{dest:x}'
+       # print(f'HIGH: {dest}')
+       # print(Memory.endian_conversion(dest))
+        dest = Memory.endian_conversion(dest)
         return f'7{jmp_functions[instruction]}{dest:0<16}'
 
     cmov_functions = {'cmovle': 1, 'cmovl': 2, 'cmove': 3, 'cmovne': 4, 'cmovge': 5, 'cmovg': 6}
@@ -197,6 +206,7 @@ def encode_ins(instruction_tokens):
     if instruction == 'call':
         dest = int(instruction_tokens[1])
         dest = f'{dest:x}'
+        dest = Memory.endian_conversion(dest)
         return f'80{dest:0<16}'
 
     if instruction == 'ret':
@@ -227,9 +237,21 @@ def encode(mapped_tokens, system):
             for i, byte in enumerate(encoded_bytes):
                 system.mem.main[place + i] = byte
 
+#todo: fix quad words
         if token_list[0] == '.quad':
             value = token_list[1]
+            value = "{0:x}".format(string_to_int(value))
             byte_list = [int(value[i:i + 2], 16) for i in range(0, len(value), 2)]
             byte_list.reverse()
             for i, a_byte in enumerate(byte_list):
                 system.mem.main[place + i] = a_byte
+
+def assemble(lines, y_system):
+    """
+    Takes source code defined by lines, assembles it, and loads it into the y_system.
+
+    :param lines: lines of source code
+    :param y_system: Y86_64 system simulation to load assembled program into
+    """
+    m_map = mem_map(tokenize(lines))
+    encode(m_map, y_system)

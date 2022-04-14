@@ -107,6 +107,8 @@ class Memory:
         """
         Takes a string of hex digits representing a series of bytes and reverses their endianess.
         """
+        if len(hex_string) % 2 != 0:
+            hex_string = f'0{hex_string}'
         byte_list = [hex_string[i:i+2] for i in range(0, len(hex_string), 2)]
         byte_list.reverse()
         return ''.join(byte_list)

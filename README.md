@@ -11,7 +11,6 @@ I've made some small changes to the syntax of Y86_64 source code concering label
 * `addq %rax, %rbx`
 * `addq %rax,%rbx`
 * `addq %rax %rbx`
-2. Colons are treated the same as newlines.
 
-3. Labels do not have to be followed by colons when defined.
-4. Labels must consist soley of alphebetical characters. 
+2. Labels do not have to be followed by colons when defined if they are on their own line. 
+3. Labels must consist only of alphebetical characters. 

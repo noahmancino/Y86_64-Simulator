@@ -35,10 +35,11 @@ class Memory:
             combined |= self.main[address + 7 - x]
         return combined
 
-    def pprint(self):
-        print("main:")
-        for i in range(125):
-            print([self.main[j + (i * 8)] for j in range(8)])
+    def __repr__(self):
+        string = ''
+        for i in range(512):
+            string += str([self.main[j + (i * 8)] for j in range(8)]) + '\n'
+        return string
 
     @staticmethod
     def to_unsigned(num):

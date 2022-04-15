@@ -26,11 +26,11 @@ class System:
         self.sign_flag = False
         self.zero_flag = False
 
-    def pprint(self):
-        print(f'registers: {[self.mem.to_signed(register) for register in self.registers]}')
-        print(f'program_counter: {self.program_counter}')
-        print(f'status: {self.status}')
-        print(f'overflow flag: {self.overflow_flag}; sign flag {self.sign_flag} ; zero flag {self.zero_flag}')
+    def __repr__(self):
+        return (f'registers: {[self.mem.to_signed(register) for register in self.registers]}\n'
+        f'program_counter: {self.program_counter}\n'
+        f'status: {self.status}\n'
+        f'overflow flag: {self.overflow_flag} ; sign flag {self.sign_flag} ; zero flag {self.zero_flag}')
 
     def halt(self):
         """
@@ -147,7 +147,6 @@ class System:
         """
         source = self.registers[src_reg] + displacement
         self.registers[dest] = self.mem.read(source)
-        print(f'source_reg {src_reg}, source: {source}, stuff: {self.mem.read(source)}')
         self.program_counter += 10
 
     def cmovxx(self, src, dest, op_code):

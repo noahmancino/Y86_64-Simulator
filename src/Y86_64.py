@@ -1,4 +1,4 @@
-from instructions import *
+from system import *
 import assembler
 import os
 import sys
@@ -20,8 +20,6 @@ def run(sys: System):
         return False
 
     next_ins = sys.mem.main[sys.program_counter:sys.program_counter + 10]
-    print('{0:x}'.format(sys.program_counter))
-    print(next_ins)
     instruction_function = next_ins[0] & 0xf
     instruction_specifier = (next_ins[0] & 0xf0) >> 4
     # Note: Not all instructions actually have register specifiers
@@ -86,11 +84,13 @@ def main():
 
     assembler.assemble(source_lines, system)
     x = 0
-    while run(system) and x < 100:
-        pc = '{0:x}'.format(system.program_counter)
-        registers = ['{0:x}'.format(thing) for thing in system.registers]
+    while run(system) and x < 1000:
+        registers = system.registers
         x += 1
 
+    print(system)
+    with open('final_memory_state.txt', 'w') as file:
+        file.write(repr(system.mem))
     return
 
 if __name__ == '__main__':

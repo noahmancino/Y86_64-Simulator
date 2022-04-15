@@ -15,9 +15,10 @@ REGISTER_INDEX = {
     "%r10": 10, "%r11": 11, "%r12": 12, "%r13": 13, "%r14": 14}
 
 
-# TODO: check inputs for validity
+# TODO: more input validation
 # TODO: more tests
 # TODO: consider making labels behave 'correctly'
+# TODO: negative inputs with mrmovq and rmmovq
 
 def string_to_int(dig_string):
     """
@@ -33,9 +34,7 @@ def string_to_int(dig_string):
         dig_string = dig_string[1:]
     # short-circut to avoid index error
     if len(dig_string) >= 3 and dig_string[0:2] == '0x':
-        print(dig_string)
         dig_string = dig_string[2:]
-        print(dig_string)
         return int(dig_string, 16)
 
     try:
@@ -56,7 +55,6 @@ def tokenize(lines):
     tokens = []
     for line in lines:
         line = line[:line.find('#')]
-        print(line)
         # The replacement needs to happen for  comma seperated operands
         line = line.replace('#', '')
         line = line.replace(',', ' ')
@@ -106,7 +104,6 @@ def mem_map(tokens):
     for place, token_list in m_map:
         if token_list[0] not in instructions and token_list[0] not in directives:
             if len(token_list) > 1:
-                print(token_list)
                 raise Exception
             else:
                 label_dict[token_list[0]] = str(place)
@@ -145,6 +142,8 @@ def encode_ins(instruction_tokens):
 
     if instruction == "irmovq":
         immediate = string_to_int(instruction_tokens[1])
+        if immediate < 0:
+            immediate = Memory.to_unsigned(immediate)
         immediate = f'{immediate:x}'
         immediate = f'{immediate:0>16}'
         immediate = Memory.endian_conversion(immediate)
@@ -160,6 +159,8 @@ def encode_ins(instruction_tokens):
         reg_b = REGISTER_INDEX[reg_b]
         reg_b = f'{reg_b:x}'
         dest = int(dest) if dest else 0
+        if dest < 0:
+            dest = Memory.to_unsigned(dest)
         dest = f'{dest:x}'
         dest = f'{dest:0>16}'
         dest = Memory.endian_conversion(dest)
@@ -171,10 +172,11 @@ def encode_ins(instruction_tokens):
         reg_a = REGISTER_INDEX[reg_a]
         reg_a = f'{reg_a:x}'
         dest = int(dest) if dest else 0
+        if dest < 0:
+            dest = Memory.to_unsigned(dest)
         dest = Memory.endian_conversion(f'{dest:x}')
         reg_b = REGISTER_INDEX[instruction_tokens[2]]
         reg_b = f'{reg_b:x}'
-        print(f'50{reg_a}{reg_b}{dest:0<16}')
         return f'50{reg_b}{reg_a}{dest:0<16}'
 
     op_functions = {'addq': 0, 'subq': 1, 'andq': 2, 'xorq': 3}
@@ -188,10 +190,7 @@ def encode_ins(instruction_tokens):
     jmp_functions = {'jmp': 0, 'jle': 1, 'jl': 2, 'je': 3, 'jne': 4, 'jge': 5, 'jg': 6}
     if instruction in jmp_functions.keys():
         dest = string_to_int(instruction_tokens[1])
-        #print(dest)
         dest = f'{dest:x}'
-       # print(f'HIGH: {dest}')
-       # print(Memory.endian_conversion(dest))
         dest = Memory.endian_conversion(dest)
         return f'7{jmp_functions[instruction]}{dest:0<16}'
 
